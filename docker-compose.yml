@@ -1,0 +1,114 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - api-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: '1.5GB'
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  api1:
+    build: .
+    container_name: api1
+    hostname: api1
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      PORT: 8081
+      RUST_LOG: info
+    depends_on:
+      - db
+    expose:
+      - "8081"
+    networks:
+      - api-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '0.5GB'
+    restart: unless-stopped
+
+  api2:
+    build: .
+    container_name: api2
+    hostname: api2
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      PORT: 8081
+      RUST_LOG: info
+    depends_on:
+      - db
+    expose:
+      - "8081"
+    networks:
+      - api-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '0.5GB'
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    networks:
+      - api-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '0.5GB'
+    restart: unless-stopped
+
+  # k6 para testes
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-stress
+    volumes:
+      - ./tests:/tests
+    networks:
+      - api-network
+    command: ["sleep", "infinity"]
+    profiles:
+      - testing
+
+volumes:
+  postgres_data:
+
+networks:
+  api-network:
+    driver: bridge

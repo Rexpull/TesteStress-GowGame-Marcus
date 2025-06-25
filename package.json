@@ -1,0 +1,34 @@
+{
+  "name": "gow-stress-test",
+  "version": "1.0.0",
+  "description": "Desafio GOW - Teste de Stress com Rust + Actix-Web + PostgreSQL",
+  "main": "index.js",
+  "scripts": {
+    "build": "docker-compose build --no-cache",
+    "up": "docker-compose up -d",
+    "down": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "clean": "docker-compose down -v && docker system prune -f",
+    "test": "docker-compose run --rm k6 k6 run /tests/desafio_interno_k6.js",
+    "test-local": "k6 run tests/desafio_gow.js",
+    "test-count": "curl http://localhost:8082/contagem-programadores",
+    "restart": "docker-compose down && docker-compose up --build -d",
+    "status": "docker-compose ps",
+    "stats": "docker stats --format 'table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}'",
+    "start": "docker-compose up --build -d",
+    "stop": "docker-compose down",
+    "restart": "docker-compose restart",
+    "test": "docker run --rm -v %CD%:/app --network host grafana/k6 run /app/tests/desafio_gow.js",
+    "test-count": "docker run --rm -v %CD%:/app --network host grafana/k6 run --vus 1 --iterations 1 /app/teste_contagem.js",
+    "test-linux": "docker run --rm -v $(pwd):/app --network host grafana/k6 run /app/tests/desafio_gow.js",
+    "clean": "docker system prune -f",
+    "status": "docker-compose ps"
+  },
+  "keywords": ["rust", "actix-web", "postgresql", "k6", "stress-test", "performance"],
+  "author": "Desafio GOW",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
